@@ -5,12 +5,12 @@ from flask import jsonify, request, Blueprint, json, g, abort, url_for
 from requests.auth import HTTPBasicAuth
 import yaml
 
-from app.dashboard.dashboard_routes import auth
-from app.models import MpesaPayment, User
-from app.mpesa_credentials import MpesaAccessToken, LipanaMpesaPpassword
+from gateway.dashboard.dashboard_routes import auth
+from gateway.models import MpesaPayment, User
+from gateway.mpesa_credentials import MpesaAccessToken, LipanaMpesaPpassword
 import xmlrpclib
-from app import db
-from app.odoo_methods.logic import Logic
+from gateway import db
+from gateway.odoo_methods.logic import Logic
 import datetime
 
 mod = Blueprint('api', __name__, url_prefix='/api')

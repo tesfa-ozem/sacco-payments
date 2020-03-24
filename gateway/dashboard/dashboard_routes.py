@@ -2,7 +2,7 @@ import functools
 import flask
 import requests
 from flask import Flask, jsonify, request, Blueprint, json, abort, url_for, g
-from app import db
+from gateway import db
 from gateway.models import MpesaPayment, OnlineTransactionsSchema, User
 from flask_httpauth import HTTPBasicAuth
 

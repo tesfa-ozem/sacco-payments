@@ -4,7 +4,7 @@ import xmlrpclib
 from flask import request, g
 
 from gateway.models import User
-from app import db
+from gateway import db
 
 HOST = 'localhost'
 PORT = 8069

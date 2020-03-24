@@ -1,6 +1,6 @@
 from flask import current_app as app
-from app import db
-from app import ma
+from gateway import db
+from gateway import ma
 import datetime
 from passlib.apps import custom_app_context as pwd_context
 from itsdangerous import (TimedJSONWebSignatureSerializer
