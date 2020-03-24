@@ -3,7 +3,7 @@ import xmlrpclib
 
 from flask import request, g
 
-from app.models import User
+from gateway.models import User
 from app import db
 
 HOST = 'localhost'

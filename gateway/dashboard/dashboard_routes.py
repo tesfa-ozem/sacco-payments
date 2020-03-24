@@ -3,7 +3,7 @@ import flask
 import requests
 from flask import Flask, jsonify, request, Blueprint, json, abort, url_for, g
 from app import db
-from app.models import MpesaPayment, OnlineTransactionsSchema, User
+from gateway.models import MpesaPayment, OnlineTransactionsSchema, User
 from flask_httpauth import HTTPBasicAuth
 
 auth = HTTPBasicAuth()
