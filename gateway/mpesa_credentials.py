@@ -26,3 +26,10 @@ class LipanaMpesaPpassword:
     data_to_encode = Business_short_code + passkey + lipa_time
     online_password = base64.b64encode(data_to_encode.encode())
     decode_password = online_password.decode('utf-8')
+
+
+class PaymentTypes:
+    deposits = 1
+    share_capital = 2
+    loan_application = 3
+    loan_payment = 4

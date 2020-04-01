@@ -1,8 +1,6 @@
 
 from gateway import create_app
-from flask_script import Manager
 
+gateway = create_app()
 
-app = create_app()
-manager = Manager(app)
 

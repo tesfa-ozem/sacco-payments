@@ -6,9 +6,9 @@ from flask import request, g
 from gateway.models import User
 from gateway import db
 
-HOST = 'localhost'
+HOST = '136.244.96.154'
 PORT = 8069
-DB = 'test_sacco'
+DB = 'sacco'
 USER = 'admin'
 PASS = '123'
 ROOT = 'http://%s:%d/xmlrpc/' % (HOST, PORT)
@@ -21,25 +21,25 @@ class Logic:
         self.common = xmlrpclib.ServerProxy(ROOT + 'common')
         self.version = self.common.version()
         self.uid = self.common.authenticate(DB, USER, PASS, {})
+        self.models_class = xmlrpclib.ServerProxy(ROOT + 'object')
 
     def register_member(self, args):
         try:
             user_logged = g.user
             print user_logged.odoo_registered
             if user_logged.odoo_registered is not True:
-                models = xmlrpclib.ServerProxy(ROOT + 'object')
-                member_id = models.execute_kw(DB, self.uid, PASS, 'sacco.member.application', 'create', [args])
-                models.exec_workflow(
+                member_id = self.models_class.execute_kw(
+                    DB, self.uid, PASS, 'sacco.member.application', 'create', [args])
+                self.models_class.exec_workflow(
                     DB, self.uid, PASS, 'sacco.member.application', 'send_for_payment', member_id)
                 member_number = \
-                    models.execute_kw(DB, self.uid, PASS, 'sacco.member.application', 'search_read',
-                                      [[['id', '=', member_id]]],
-                                      {'fields': ['no']})[0]['no']
+                    self.models_class.execute_kw(DB, self.uid, PASS, 'sacco.member.application', 'search_read',
+                                                 [[['id', '=', member_id]]],
+                                                 {'fields': ['no']})[0]['no']
                 print member_number
 
                 user_logged.odoo_registered = True
-                user_logged.odoo_id = str(member_id)
-                user_logged.odoo_member_number = member_number
+                user_logged.odoo_app_id = str(member_id)
                 db.session.add(user_logged)
                 db.session.commit()
                 return str(member_id)
@@ -48,25 +48,25 @@ class Logic:
         except Exception as e:
             return str(e)
 
-    def search_member(self, args):
-        pass
+    def search_member(self):
+        models = xmlrpclib.ServerProxy(ROOT + 'object')
+
+        member = models.execute_kw(DB, self.uid, PASS, 'sacco.member.application', 'search_read',
+                                   [[['id', '=', 40]]],
+                                   {'fields': ['id', 'name', 'no', 'state']})[0]
+
+        return member
 
     # TODO: add  script for multiple guarantors
-    def apply_loan(self, args, guarantor_id):
+    def apply_loan(self, args):
         user_logged = g.user
-        if user_logged.odoo_member:
-            models = xmlrpclib.ServerProxy(ROOT + 'object')
-            loan_id = models.execute_kw(DB, self.uid, PASS, 'sacco.loan', 'create', [args])
-            models.execute_kw(DB, self.uid, PASS, 'sacco.loan.guarantors', 'create', [{
-                'loan_no': loan_id,
-                'member_no': guarantor_id
-            }])
-            print loan_id
+        loan_id = self.models_class.execute_kw(DB, self.uid, PASS, 'sacco.loan', 'create', [args])
+        self.models_class.exec_workflow(
+            DB, self.uid, PASS, 'sacco.loan', 'send_for_appraisal', loan_id)
+        print loan_id
+        return loan_id
 
     def pay_loan(self, args):
-        pass
-
-    def deposit(self, args):
         pass
 
     def check_balance(self, args):
@@ -76,43 +76,44 @@ class Logic:
         pass
 
     # TODO: add control for the amount
-    def pay_reg_fee(self, args):
+    def pay_reg_fee(self, args, amounts):
         reg_fee = self.get_reg_fee()
-        models = xmlrpclib.ServerProxy(ROOT + 'object')
-        recipt_id = models.execute_kw(DB, self.uid, PASS, 'sacco.receipt.header', 'create', [args])
-        if reg_fee['reg_fee']:
-            models.execute_kw(DB, self.uid, PASS, 'sacco.receipt.line', 'create', [{
+        recipt_id = self.models_class.execute_kw(
+            DB, self.uid, PASS, 'sacco.receipt.header', 'create', [args])
+        if reg_fee['reg_fee'] == amounts['reg_fee']:
+            self.models_class.execute_kw(DB, self.uid, PASS, 'sacco.receipt.line', 'create', [{
                 'no': recipt_id,
                 'transaction_type': 'registration',
                 'member_application_id': args['member_application_id'],
                 'member_name': 'Tesfa',
-                'amount': reg_fee['reg_fee'],
+                'amount': amounts['reg_fee'],
 
             }
             ])
 
-        if reg_fee['min_share'] is not None:
-            models.execute_kw(DB, self.uid, PASS, 'sacco.receipt.line', 'create', [{
+        if amounts['min_share'] is not None:
+            self.models_class.execute_kw(DB, self.uid, PASS, 'sacco.receipt.line', 'create', [{
                 'no': recipt_id,
                 'transaction_type': 'shares',
                 'member_application_id': args['member_application_id'],
                 'member_name': 'Tesfa',
-                'amount': reg_fee['min_share']
+                'amount': amounts['min_share']
             }
             ])
-        models.execute_kw(DB, self.uid, PASS, 'sacco.receipt.header', 'action_post', [recipt_id])
+        self.models_class.execute_kw(DB, self.uid, PASS,
+                                     'sacco.receipt.header', 'action_post', [recipt_id])
+
         return self.get_reg_status()
 
     def get_bank_code(self):
-        models = xmlrpclib.ServerProxy(ROOT + 'object')
-        setup = models.execute_kw(DB, self.uid, PASS, 'sacco.setup', 'search_read', [[['id', '=', 1]]])[0]
+        setup = self.models_class.execute_kw(
+            DB, self.uid, PASS, 'sacco.setup', 'search_read', [[['id', '=', 1]]])[0]
         return setup['mpesa_account'][0]
 
     def get_reg_fee(self):
         try:
-
-            models = xmlrpclib.ServerProxy(ROOT + 'object')
-            setup = models.execute_kw(DB, self.uid, PASS, 'sacco.setup', 'search_read', [[['id', '=', 1]]])[0]
+            setup = self.models_class.execute_kw(
+                DB, self.uid, PASS, 'sacco.setup', 'search_read', [[['id', '=', 1]]])[0]
             rg_fee = setup['registration_fee']
             min_share_cap = setup['minimum_shares']
             return {'reg_fee': rg_fee,
@@ -131,10 +132,49 @@ class Logic:
 
     def get_reg_status(self):
         user_logged = g.user
-        models = xmlrpclib.ServerProxy(ROOT + 'object')
+        self.models_class = xmlrpclib.ServerProxy(ROOT + 'object')
         member_status = \
-            models.execute_kw(DB, self.uid, PASS, 'sacco.member.application', 'search_read',
-                              [[['id', '=', user_logged.odoo_id]]],
-                              {'fields': ['state', 'registration_fee_balance', 'share_capital_balance']})[0]
+            self.models_class.execute_kw(DB, self.uid, PASS, 'sacco.member.application', 'search_read',
+                                         [[['id', '=', user_logged.odoo_app_id]]],
+                                         {'fields': ['state', 'registration_fee_balance', 'share_capital_balance',
+                                                     'member_id']})[
+                0]
 
         return member_status
+
+    # Deposits
+
+    def deposit(self, args, amount):
+        recipt_id = self.models_class.execute_kw(
+            DB, self.uid, PASS, 'sacco.receipt.header', 'create', [args])
+
+        self.models_class.execute_kw(DB, self.uid, PASS, 'sacco.receipt.line', 'create', [{
+            'no': recipt_id,
+            'transaction_type': 'deposits',
+            'member_no': args['received_from'],
+            'member_name': 'Nezghi',
+            'amount': amount
+        }
+        ])
+        self.models_class.exec_workflow(
+            DB, self.uid, PASS, 'sacco.receipt.header', 'send_for_posting', recipt_id)
+
+    def buy_share(self, args, amount):
+
+        recipt_id = self.models_class.execute_kw(
+            DB, self.uid, PASS, 'sacco.receipt.header', 'create', [args])
+
+        self.models_class.execute_kw(DB, self.uid, PASS, 'sacco.receipt.line', 'create', [{
+            'no': recipt_id,
+            'transaction_type': 'shares',
+            'member_no': args['received_from'],
+            'member_name': 'Nezghi',
+            'amount': amount
+        }
+        ])
+        self.models_class.exec_workflow(
+            DB, self.uid, PASS, 'sacco.receipt.header', 'send_for_posting', recipt_id)
+
+    def disburse_loan(self,args):
+        self.models_class.exec_workflow(
+            DB, self.uid, PASS, 'sacco.loan', 'send_for_appraisal', args)

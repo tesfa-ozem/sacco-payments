@@ -20,8 +20,9 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(32), index=True)
     password_hash = db.Column(db.String(128))
-    odoo_id = db.Column(db.String)
-    odoo_member_number = db.Column(db.String)
+    odoo_app_id = db.Column(db.String(10))
+    odoo_member_id = db.Column(db.String(10))
+    odoo_member_number = db.Column(db.String(20))
     odoo_registered = db.Column(db.Boolean)
     odoo_member = db.Column(db.Boolean)
 
@@ -31,7 +32,7 @@ class User(db.Model):
     def verify_password(self, password):
         return pwd_context.verify(password, self.password_hash)
 
-    def generate_auth_token(self, expiration=6000):
+    def generate_auth_token(self, expiration=60000):
         s = Serializer(app.config['SECRET_KEY'], expires_in=expiration)
         return s.dumps({'id': self.id})
 

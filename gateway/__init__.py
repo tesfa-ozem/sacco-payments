@@ -4,14 +4,14 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_marshmallow import Marshmallow
 from config import Config
-
+from gateway.mpesa_credentials import PaymentTypes
 
 db = SQLAlchemy()
 migrate = Migrate()
 ma = Marshmallow()
 
 
-def create_app(config_class=Config):
+def create_app(config_class=Config,):
     # create application instance
     app = Flask(__name__)
     app.config.from_object(config_class)
