@@ -3,5 +3,4 @@
 venv
 app.db
 migrations
-venv
 .vscode
