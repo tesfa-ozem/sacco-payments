@@ -1,12 +1,10 @@
-import functools
-import flask
-import requests
-from flask import Flask, jsonify, request, Blueprint, json, abort, url_for, g
-from gateway import db
-from gateway.models import MpesaPayment, OnlineTransactionsSchema, User
-from flask_httpauth import HTTPBasicAuth
 
-auth = HTTPBasicAuth()
+from flask import Flask, jsonify, request, Blueprint, json, abort, url_for, g
+from gateway.models import MpesaPayment, OnlineTransactionsSchema, User
+from flask_httpauth import HTTPTokenAuth
+
+
+auth = HTTPTokenAuth(scheme='Token')
 
 mod = Blueprint('dashboard', __name__, url_prefix='/api/dashboard')
 

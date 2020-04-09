@@ -6,9 +6,9 @@ from flask import request, g
 from gateway.models import User
 from gateway import db
 
-HOST = '136.244.96.154'
+HOST = '127.0.0.1'
 PORT = 8069
-DB = 'sacco'
+DB = 'test_sacco'
 USER = 'admin'
 PASS = '123'
 ROOT = 'http://%s:%d/xmlrpc/' % (HOST, PORT)
@@ -137,25 +137,38 @@ class Logic:
             self.models_class.execute_kw(DB, self.uid, PASS, 'sacco.member.application', 'search_read',
                                          [[['id', '=', user_logged.odoo_app_id]]],
                                          {'fields': ['state', 'registration_fee_balance', 'share_capital_balance',
-                                                     'member_id']})[
-                0]
+                                                     'member_id']})[0]
 
         return member_status
 
     # Deposits
 
-    def deposit(self, args, amount):
+    def deposit(self, args, lines, user,odoo_member_id):
+        logged_user = user
+
         recipt_id = self.models_class.execute_kw(
             DB, self.uid, PASS, 'sacco.receipt.header', 'create', [args])
+        if args['transaction_type'] == "normal":
+            for l in lines:
+                line = {
+                    'no': recipt_id,
+                    'transaction_type': l['transaction_type'],
+                    'member_no': odoo_member_id,
+                    'member_name': "USer",
+                    'amount': l['amount']
+                }
+                self.models_class.execute_kw(DB, self.uid, PASS, 'sacco.receipt.line', 'create', [line])
+        else:
+            for l in lines:
 
-        self.models_class.execute_kw(DB, self.uid, PASS, 'sacco.receipt.line', 'create', [{
-            'no': recipt_id,
-            'transaction_type': 'deposits',
-            'member_no': args['received_from'],
-            'member_name': 'Nezghi',
-            'amount': amount
-        }
-        ])
+                line = {
+                    'no': recipt_id,
+                    'transaction_type': l['transaction_type'],
+                    'member_application_id': logged_user.odoo_app_id,
+                    'member_name': logged_user.username,
+                    'amount': l['amount']
+                }
+                self.models_class.execute_kw(DB, self.uid, PASS, 'sacco.receipt.line', 'create', [line])
         self.models_class.exec_workflow(
             DB, self.uid, PASS, 'sacco.receipt.header', 'send_for_posting', recipt_id)
 
@@ -175,6 +188,6 @@ class Logic:
         self.models_class.exec_workflow(
             DB, self.uid, PASS, 'sacco.receipt.header', 'send_for_posting', recipt_id)
 
-    def disburse_loan(self,args):
+    def disburse_loan(self, args):
         self.models_class.exec_workflow(
             DB, self.uid, PASS, 'sacco.loan', 'send_for_appraisal', args)
