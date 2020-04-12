@@ -25,9 +25,9 @@ def new_user():
     username = request.json.get('username')
     password = request.json.get('password')
     if username is None or password is None:
-        abort(400)  # missing arguments
+        return jsonify({'message': 'resource not found'}), 404
     if User.query.filter_by(username=username).first() is not None:
-        abort(400)  # existing user
+        return jsonify({'message': 'resource not found'}), 404
     user = User(username=username)
     user.hash_password(password)
     db.session.add(user)
@@ -37,7 +37,6 @@ def new_user():
 
 
 @mod.route('index', methods=['POST'])
-@token_auth.login_required
 def index():
     return "Hello world"
 
