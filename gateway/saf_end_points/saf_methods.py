@@ -8,13 +8,19 @@ from gateway.mpesa_credentials import MpesaAccessToken, LipanaMpesaPpassword
 class SafMethods:
 
     def __init__(self):
-        self.access_token = MpesaAccessToken.validated_mpesa_access_token
+        pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        print traceback
 
     def send_push(self, args, phone_number):
+        access_token = MpesaAccessToken.validated_mpesa_access_token
         amount = 0
         for line in args:
             amount += line['amount']
-            print LipanaMpesaPpassword.decode_password
         request_body = {
             "BusinessShortCode": LipanaMpesaPpassword.Business_short_code,
             "Password": LipanaMpesaPpassword.decode_password,
@@ -25,12 +31,12 @@ class SafMethods:
             "PartyB": LipanaMpesaPpassword.Business_short_code,
             # replace with your phone number to get stk push
             "PhoneNumber": phone_number,
-            "CallBackURL": "https://f9a33a70.ngrok.io/api/v1/c2b/callback",
-            "AccountReference": "Test Loans",
-            "TransactionDesc": "Loans"
+            "CallBackURL": "https://db0eab5d.ngrok.io/api/v1/c2b/callback",
+            "AccountReference": "Test payments",
+            "TransactionDesc": "1234"
         }
         api_url = "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest"
-        headers = {"Authorization": "Bearer %s" % self.access_token}
+        headers = {"Authorization": "Bearer %s" % access_token}
         response = requests.post(api_url, json=request_body, headers=headers)
         return response
 
@@ -47,18 +53,20 @@ class SafMethods:
         pass
 
     def register_url(self):
+        access_token = MpesaAccessToken.validated_mpesa_access_token
         args = {
             "ShortCode": LipanaMpesaPpassword.Test_c2b_shortcode,
             "ResponseType": "Canceled",
-            "ConfirmationURL": "https://1c817d39.ngrok.io/c2b/v1//api/confirmationCallback",
-            "ValidationURL": "https://1c817d39.ngrok.io/c2b/v1/api/validationResponse"
+            "ConfirmationURL": "https://db0eab5d.ngrok.io/api/v1/c2b/callback",
+            "ValidationURL": "https://db0eab5d.ngrok.io/c2b/v1/api/validationResponse"
         }
         api_url = "https://sandbox.safaricom.co.ke/mpesa/c2b/v1/registerurl"
-        headers = {"Authorization": "Bearer %s" % self.access_token}
+        headers = {"Authorization": "Bearer %s" % access_token}
         response = requests.post(api_url, json=args, headers=headers)
         return json.dumps(response.json(), ensure_ascii=False)
 
     def make_payment(self):
+        access_token = MpesaAccessToken.validated_mpesa_access_token
         args = {
             "ShortCode": LipanaMpesaPpassword.Test_c2b_shortcode,
             "CommandID": "CustomerPayBillOnline",
@@ -67,6 +75,6 @@ class SafMethods:
             "BillRefNumber": "C2B working"
         }
         api_url = "https://sandbox.safaricom.co.ke/mpesa/c2b/v1/simulate"
-        headers = {"Authorization": "Bearer %s" % self.access_token}
+        headers = {"Authorization": "Bearer %s" % access_token}
         response = requests.post(api_url, json=args, headers=headers)
         return response

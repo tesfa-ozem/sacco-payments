@@ -19,7 +19,7 @@ def create_app(config_class=Config, ):
     # create application instance
     app = Flask(__name__)
     app.config.from_object(config_class)
-    CORS(app)
+    CORS(app, resources={r"/api/*": {"origins": "*"}})
     db.init_app(app)
     migrate.init_app(app, db)
     ma.init_app(app)

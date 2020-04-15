@@ -6,6 +6,7 @@ from gateway.models import User
 from gateway.mpesa_credentials import LipanaMpesaPpassword
 from gateway.odoo_methods.logic import Logic
 from gateway.saf_end_points.saf_methods import SafMethods
+import requests
 
 
 class TestConfig(Config):
@@ -45,16 +46,26 @@ class UserModelCase(unittest.TestCase):
         args = [
             {
                 "transaction_type": " deposits",
-                "amount": 200
+                "amount": 2
             },
             {
                 "transaction_type": " deposits",
-                "amount": 200
+                "amount": 2
             },
 
         ]
         end_points = SafMethods()
         status = end_points.send_push(args, 254727292911)
+        print status
+
+    def testCallBack(self):
+        response = requests.post("https://db0eab5d.ngrok.io/api/v1/c2b/callback")
+        print response
+        self.assertEqual(response.json(), "called")
+
+    def testC2B(self):
+        end_points = SafMethods()
+        status = end_points.make_payment()
         print status
 
 

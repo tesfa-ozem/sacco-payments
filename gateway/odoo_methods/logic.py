@@ -23,6 +23,12 @@ class Logic:
         self.uid = self.common.authenticate(DB, USER, PASS, {})
         self.models_class = xmlrpclib.ServerProxy(ROOT + 'object')
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        print traceback
+
     def register_member(self, args):
         try:
             user_logged = g.user
@@ -76,59 +82,59 @@ class Logic:
         pass
 
     # TODO: add control for the amount
-    def pay_reg_fee(self, args, amounts):
-        reg_fee = self.get_reg_fee()
-        recipt_id = self.models_class.execute_kw(
-            DB, self.uid, PASS, 'sacco.receipt.header', 'create', [args])
-        if reg_fee['reg_fee'] == amounts['reg_fee']:
-            self.models_class.execute_kw(DB, self.uid, PASS, 'sacco.receipt.line', 'create', [{
-                'no': recipt_id,
-                'transaction_type': 'registration',
-                'member_application_id': args['member_application_id'],
-                'member_name': 'Tesfa',
-                'amount': amounts['reg_fee'],
-
-            }
-            ])
-
-        if amounts['min_share'] is not None:
-            self.models_class.execute_kw(DB, self.uid, PASS, 'sacco.receipt.line', 'create', [{
-                'no': recipt_id,
-                'transaction_type': 'shares',
-                'member_application_id': args['member_application_id'],
-                'member_name': 'Tesfa',
-                'amount': amounts['min_share']
-            }
-            ])
-        self.models_class.execute_kw(DB, self.uid, PASS,
-                                     'sacco.receipt.header', 'action_post', [recipt_id])
-
-        return self.get_reg_status()
+    # def pay_reg_fee(self, args, amounts):
+    #     reg_fee = self.get_reg_fee()
+    #     recipt_id = self.models_class.execute_kw(
+    #         DB, self.uid, PASS, 'sacco.receipt.header', 'create', [args])
+    #     if reg_fee['reg_fee'] == amounts['reg_fee']:
+    #         self.models_class.execute_kw(DB, self.uid, PASS, 'sacco.receipt.line', 'create', [{
+    #             'no': recipt_id,
+    #             'transaction_type': 'registration',
+    #             'member_application_id': args['member_application_id'],
+    #             'member_name': 'Tesfa',
+    #             'amount': amounts['reg_fee'],
+    #
+    #         }
+    #         ])
+    #
+    #     if amounts['min_share'] is not None:
+    #         self.models_class.execute_kw(DB, self.uid, PASS, 'sacco.receipt.line', 'create', [{
+    #             'no': recipt_id,
+    #             'transaction_type': 'shares',
+    #             'member_application_id': args['member_application_id'],
+    #             'member_name': 'Tesfa',
+    #             'amount': amounts['min_share']
+    #         }
+    #         ])
+    #     self.models_class.execute_kw(DB, self.uid, PASS,
+    #                                  'sacco.receipt.header', 'action_post', [recipt_id])
+    #
+    #     return self.get_reg_status()
 
     def get_bank_code(self):
         setup = self.models_class.execute_kw(
             DB, self.uid, PASS, 'sacco.setup', 'search_read', [[['id', '=', 1]]])[0]
         return setup['mpesa_account'][0]
 
-    def get_reg_fee(self):
-        try:
-            setup = self.models_class.execute_kw(
-                DB, self.uid, PASS, 'sacco.setup', 'search_read', [[['id', '=', 1]]])[0]
-            rg_fee = setup['registration_fee']
-            min_share_cap = setup['minimum_shares']
-            return {'reg_fee': rg_fee,
-                    'min_share': min_share_cap}
-        except Exception as e:
+    # def get_reg_fee(self):
+    #     try:
+    #         setup = self.models_class.execute_kw(
+    #             DB, self.uid, PASS, 'sacco.setup', 'search_read', [[['id', '=', 1]]])[0]
+    #         rg_fee = setup['registration_fee']
+    #         min_share_cap = setup['minimum_shares']
+    #         return {'reg_fee': rg_fee,
+    #                 'min_share': min_share_cap}
+    #     except Exception as e:
+    #
+    #         return str(e)
 
-            return str(e)
-
-    def get_total_reg_fee(self):
-        total_reg_fee = 0.0
-
-        for i in self.get_reg_fee().values():
-            total_reg_fee += i
-
-        return total_reg_fee
+    # def get_total_reg_fee(self):
+    #     total_reg_fee = 0.0
+    #
+    #     for i in self.get_reg_fee().values():
+    #         total_reg_fee += i
+    #
+    #     return total_reg_fee
 
     def get_reg_status(self):
         user_logged = g.user

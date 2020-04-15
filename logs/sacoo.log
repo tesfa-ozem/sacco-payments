@@ -29,3 +29,55 @@
 2020-04-12 13:31:02,062 INFO: Saccostartup [in D:\Apis\Flaskprojects\SaccoPaymentGateway\gateway\__init__.py:61]
 2020-04-12 13:35:42,466 INFO: Saccostartup [in D:\Apis\Flaskprojects\SaccoPaymentGateway\gateway\__init__.py:61]
 2020-04-12 14:02:19,542 INFO: Saccostartup [in D:\Apis\Flaskprojects\SaccoPaymentGateway\gateway\__init__.py:61]
+2020-04-12 14:25:05,325 INFO: Saccostartup [in D:\Apis\Flaskprojects\SaccoPaymentGateway\gateway\__init__.py:61]
+2020-04-13 11:26:22,028 INFO: Saccostartup [in D:\Apis\Flaskprojects\SaccoPaymentGateway\gateway\__init__.py:61]
+2020-04-13 11:31:39,776 INFO: Saccostartup [in D:\Apis\Flaskprojects\SaccoPaymentGateway\gateway\__init__.py:61]
+2020-04-13 11:35:52,378 INFO: Saccostartup [in D:\Apis\Flaskprojects\SaccoPaymentGateway\gateway\__init__.py:61]
+2020-04-13 11:39:51,818 INFO: Saccostartup [in D:\Apis\Flaskprojects\SaccoPaymentGateway\gateway\__init__.py:61]
+2020-04-13 11:42:39,687 INFO: Saccostartup [in D:\Apis\Flaskprojects\SaccoPaymentGateway\gateway\__init__.py:61]
+2020-04-13 11:46:31,042 INFO: Saccostartup [in D:\Apis\Flaskprojects\SaccoPaymentGateway\gateway\__init__.py:61]
+2020-04-13 11:50:54,549 INFO: Saccostartup [in D:\Apis\Flaskprojects\SaccoPaymentGateway\gateway\__init__.py:61]
+2020-04-13 11:53:02,457 INFO: Saccostartup [in D:\Apis\Flaskprojects\SaccoPaymentGateway\gateway\__init__.py:61]
+2020-04-13 11:53:20,325 INFO: Saccostartup [in D:\Apis\Flaskprojects\SaccoPaymentGateway\gateway\__init__.py:61]
+2020-04-13 11:54:10,276 INFO: Saccostartup [in D:\Apis\Flaskprojects\SaccoPaymentGateway\gateway\__init__.py:61]
+2020-04-13 11:59:42,756 INFO: Saccostartup [in D:\Apis\Flaskprojects\SaccoPaymentGateway\gateway\__init__.py:61]
+2020-04-13 12:07:41,690 INFO: Saccostartup [in D:\Apis\Flaskprojects\SaccoPaymentGateway\gateway\__init__.py:61]
+2020-04-15 10:48:10,710 INFO: Saccostartup [in D:\Apis\Flaskprojects\SaccoPaymentGateway\gateway\__init__.py:61]
+2020-04-15 11:01:09,438 INFO: Saccostartup [in D:\Apis\Flaskprojects\SaccoPaymentGateway\gateway\__init__.py:61]
+2020-04-15 11:02:42,841 INFO: Saccostartup [in D:\Apis\Flaskprojects\SaccoPaymentGateway\gateway\__init__.py:61]
+2020-04-15 11:03:23,384 INFO: Saccostartup [in D:\Apis\Flaskprojects\SaccoPaymentGateway\gateway\__init__.py:61]
+2020-04-15 11:07:18,036 ERROR: Exception on /api/MakePayment [POST] [in D:\Apis\Flaskprojects\SaccoPaymentGateway\venv\lib\site-packages\flask\app.py:1891]
+Traceback (most recent call last):
+  File "D:\Apis\Flaskprojects\SaccoPaymentGateway\venv\lib\site-packages\flask\app.py", line 2446, in wsgi_app
+    response = self.full_dispatch_request()
+  File "D:\Apis\Flaskprojects\SaccoPaymentGateway\venv\lib\site-packages\flask\app.py", line 1951, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "D:\Apis\Flaskprojects\SaccoPaymentGateway\venv\lib\site-packages\flask_cors\extension.py", line 161, in wrapped_function
+    return cors_after_request(app.make_response(f(*args, **kwargs)))
+  File "D:\Apis\Flaskprojects\SaccoPaymentGateway\venv\lib\site-packages\flask\app.py", line 1820, in handle_user_exception
+    reraise(exc_type, exc_value, tb)
+  File "D:\Apis\Flaskprojects\SaccoPaymentGateway\venv\lib\site-packages\flask\app.py", line 1949, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "D:\Apis\Flaskprojects\SaccoPaymentGateway\venv\lib\site-packages\flask\app.py", line 1935, in dispatch_request
+    return self.view_functions[rule.endpoint](**req.view_args)
+  File "D:\Apis\Flaskprojects\SaccoPaymentGateway\venv\lib\site-packages\flask_httpauth.py", line 105, in decorated
+    return f(*args, **kwargs)
+  File "D:\Apis\Flaskprojects\SaccoPaymentGateway\gateway\api\routes.py", line 117, in lipa_na_mpesa_online
+    with Logic as logic:
+AttributeError: __exit__
+2020-04-15 11:08:49,135 INFO: Saccostartup [in D:\Apis\Flaskprojects\SaccoPaymentGateway\gateway\__init__.py:61]
+2020-04-15 11:09:07,842 INFO: Saccostartup [in D:\Apis\Flaskprojects\SaccoPaymentGateway\gateway\__init__.py:61]
+2020-04-15 11:16:10,496 INFO: Saccostartup [in D:\Apis\Flaskprojects\SaccoPaymentGateway\gateway\__init__.py:61]
+2020-04-15 11:16:57,592 INFO: Saccostartup [in D:\Apis\Flaskprojects\SaccoPaymentGateway\gateway\__init__.py:61]
+2020-04-15 11:19:17,930 INFO: Saccostartup [in D:\Apis\Flaskprojects\SaccoPaymentGateway\gateway\__init__.py:61]
+2020-04-15 11:19:29,224 INFO: Saccostartup [in D:\Apis\Flaskprojects\SaccoPaymentGateway\gateway\__init__.py:61]
+2020-04-15 11:20:42,108 INFO: Saccostartup [in D:\Apis\Flaskprojects\SaccoPaymentGateway\gateway\__init__.py:61]
+2020-04-15 11:20:45,719 INFO: Saccostartup [in D:\Apis\Flaskprojects\SaccoPaymentGateway\gateway\__init__.py:61]
+2020-04-15 11:24:50,213 INFO: Saccostartup [in D:\Apis\Flaskprojects\SaccoPaymentGateway\gateway\__init__.py:61]
+2020-04-15 11:25:32,051 INFO: Saccostartup [in D:\Apis\Flaskprojects\SaccoPaymentGateway\gateway\__init__.py:61]
+2020-04-15 11:26:13,026 INFO: Saccostartup [in D:\Apis\Flaskprojects\SaccoPaymentGateway\gateway\__init__.py:61]
+2020-04-15 11:41:13,631 INFO: Saccostartup [in D:\Apis\Flaskprojects\SaccoPaymentGateway\gateway\__init__.py:61]
+2020-04-15 11:42:32,727 INFO: Saccostartup [in D:\Apis\Flaskprojects\SaccoPaymentGateway\gateway\__init__.py:61]
+2020-04-15 11:46:02,279 INFO: Saccostartup [in D:\Apis\Flaskprojects\SaccoPaymentGateway\gateway\__init__.py:61]
+2020-04-15 11:46:40,976 INFO: Saccostartup [in D:\Apis\Flaskprojects\SaccoPaymentGateway\gateway\__init__.py:61]
+2020-04-15 11:49:05,930 INFO: Saccostartup [in D:\Apis\Flaskprojects\SaccoPaymentGateway\gateway\__init__.py:61]

@@ -16,18 +16,15 @@ basic_auth = HTTPBasicAuth()
 multi_auth = MultiAuth(basic_auth, auth)
 mod = Blueprint('api', __name__, url_prefix='/api')
 
-logic = Logic()
-payments = SafMethods()
-
 
 @mod.route('/signUp', methods=['POST'])
 def new_user():
     username = request.json.get('username')
     password = request.json.get('password')
     if username is None or password is None:
-        return jsonify({'message': 'resource not found'}), 404
+        return jsonify({"error":"missing arguments"}) # missing arguments
     if User.query.filter_by(username=username).first() is not None:
-        return jsonify({'message': 'resource not found'}), 404
+        return jsonify({"error":"existing user"})  # existing user
     user = User(username=username)
     user.hash_password(password)
     db.session.add(user)
@@ -37,6 +34,7 @@ def new_user():
 
 
 @mod.route('index', methods=['POST'])
+@token_auth.login_required
 def index():
     return "Hello world"
 
@@ -73,17 +71,13 @@ def verify_token(token):
     return True
 
 
-@mod.route('/getMember', methods=['POST'])
+@mod.route('/getMember', methods=['Get'])
 @token_auth.login_required
 def get_member():
-    try:
-        member = logic.get_reg_status()
-        return jsonify(member)
-    except Exception as e:
-        print(str(e))
-        return jsonify(str(e))
+    pass
 
 
+# add member to odoo
 @mod.route('/registerMember', methods=['POST'])
 @token_auth.login_required
 def add_member():
@@ -101,12 +95,13 @@ def add_member():
             'location': request.json['location'],
 
         }
-        return str(logic.register_member(args))
+        with Logic() as r:
+            return str(r.register_member(args))
     except Exception as e:
         return str(e)
 
 
-# Sacco process
+# Sacco payment process
 
 
 @mod.route("/MakePayment", methods=['POST'])
@@ -118,27 +113,29 @@ def lipa_na_mpesa_online():
     global lines
     global user
     user = g.user
-    status = logic.get_reg_status()
-    lines = request.json['lines']
-    trans_type = request.json['header']['transaction_type']
-    phone_number = request.json['phone']
-    if status['state'] == 'complete' and user.odoo_member is not True:
-        user.odoo_member_number = status['member_id'][1]
-        user.odoo_member_id = status['member_id'][0]
-        user.odoo_member = True
-        db.session.add(user)
-        db.session.commit()
-        odoo_member_id = status['member_id'][0]
+    with Logic() as logic:
+        status = logic.get_reg_status()
+        lines = request.json['lines']
+        trans_type = request.json['header']['transaction_type']
+        phone_number = request.json['phone']
+        if status['state'] == 'complete' and user.odoo_member is not True:
+            user.odoo_member_number = status['member_id'][1]
+            user.odoo_member_id = status['member_id'][0]
+            user.odoo_member = True
+            db.session.add(user)
+            db.session.commit()
+            odoo_member_id = status['member_id'][0]
 
-    elif status['state'] != 'complete':
-        odoo_app_id = user.odoo_app_id
+        elif status['state'] != 'complete':
+            odoo_app_id = user.odoo_app_id
 
-    else:
-        odoo_member_id = user.odoo_member_id
-        print odoo_member_id
+        else:
+            odoo_member_id = user.odoo_member_id
+            print odoo_member_id
 
-    response = payments.send_push(args=lines, phone_number=phone_number)
-    return json.dumps(response.json(), ensure_ascii=False)
+    with SafMethods() as payments:
+        response = payments.send_push(args=lines, phone_number=phone_number)
+        return json.dumps(response.json(), ensure_ascii=False)
 
 
 # Loan process
@@ -172,31 +169,33 @@ def call_back():
         phone_number = str(payment_body[3]['Value'])
         payment = MpesaPayment(name=name, amount=amount,
                                phone_number=phone_number)
-        bank_code = logic.get_bank_code()
-        db.session.add(payment)
-        db.session.commit()
-        if trans_type == 'registration':
-            print user.odoo_app_id
-            args = {
-                'bank_code': bank_code,
-                'member_application_id': user.odoo_app_id,
-                'transaction_type': trans_type,
-                'receipt_type': 'auto'
-            }
-            logic.deposit(args, lines, user)
-        else:
-            args = {
-                'bank_code': bank_code,
-                'received_from': odoo_member_id,
-                'transaction_type': trans_type,
-                'receipt_type': 'auto'
-            }
-            logic.deposit(args, lines, user, odoo_member_id)
+        with Logic() as logic:
+            bank_code = logic.get_bank_code()
+            db.session.add(payment)
+            db.session.commit()
+            if trans_type == 'registration':
+                print user.odoo_app_id
+                args = {
+                    'bank_code': bank_code,
+                    'member_application_id': user.odoo_app_id,
+                    'transaction_type': trans_type,
+                    'receipt_type': 'auto'
+                }
+                logic.deposit(args, lines, user)
+            else:
+                args = {
+                    'bank_code': bank_code,
+                    'received_from': odoo_member_id,
+                    'transaction_type': trans_type,
+                    'receipt_type': 'auto'
+                }
+                logic.deposit(args, lines, user, odoo_member_id)
+        print "callback"
 
-        return request.json
+        return "called"
     except Exception as e:
         print(str(e))
-        return jsonify()
+        return jsonify(str(e))
 
 
 # Apply for Loan
@@ -213,13 +212,15 @@ def loan_application():
         "member_no": user_logged.odoo_member_id,
         "loan_type": "online"
     }
-    return str(logic.apply_loan(args))
+    with Logic as logic:
+        return str(logic.apply_loan(args))
 
 
-@mod.route('/getMemberStatus')
+@mod.route('/getAppStatus')
 @token_auth.login_required
 def get_status():
-    return jsonify(logic.get_reg_status())
+    with Logic() as logic:
+        return jsonify(logic.get_reg_status())
 
 
 # C2b Api
@@ -232,3 +233,9 @@ def validation_response():
 @mod.route('/confirmationCallback')
 def confirmation_callback():
     return str('confirmation_callback')
+
+
+@mod.route('/c2bPayment')
+def makec2bPayment():
+    with SafMethods() as payments:
+        payments.make_payment()
