@@ -1,14 +1,11 @@
 from flask import jsonify, request, Blueprint, json, g, abort, url_for
 import yaml
 from flask_httpauth import MultiAuth, HTTPTokenAuth, HTTPBasicAuth
-
 from gateway.dashboard.dashboard_routes import auth
 from gateway.models import MpesaPayment, User
-from gateway.mpesa_credentials import LipanaMpesaPpassword
 from gateway import db
 from gateway.odoo_methods.logic import Logic
 import datetime
-
 from gateway.saf_end_points.saf_methods import SafMethods
 
 token_auth = HTTPTokenAuth(scheme='Bearer')
@@ -22,15 +19,25 @@ def new_user():
     username = request.json.get('username')
     password = request.json.get('password')
     if username is None or password is None:
-        return jsonify({"error":"missing arguments"}) # missing arguments
+        return jsonify({"error": "missing arguments"})  # missing arguments
     if User.query.filter_by(username=username).first() is not None:
-        return jsonify({"error":"existing user"})  # existing user
+        return jsonify({"error": "existing user"})  # existing user
     user = User(username=username)
     user.hash_password(password)
     db.session.add(user)
     db.session.commit()
     return jsonify({'username': user.username}), 201, {
         'Location': url_for('api.get_member', id=user.id, _external=True)}
+
+
+@mod.route('/member', methods=['PATCH'])
+@token_auth.login_required
+def update_member():
+    try:
+        with Logic as logic:
+            return logic.register_member(request.json)
+    except Exception as e:
+        return str(e)
 
 
 @mod.route('index', methods=['POST'])
@@ -71,32 +78,28 @@ def verify_token(token):
     return True
 
 
-@mod.route('/getMember', methods=['Get'])
+@mod.route('/member', methods=['Get'])
 @token_auth.login_required
 def get_member():
-    pass
+    try:
+        with Logic as logic:
+            resp = jsonify({"data": logic.search_member()})
+            resp.status_code = 200
+            return resp
+    except Exception as e:
+        resp = jsonify({'error ': "an error occurred",
+                        'message': str(e)})
+        resp.status_code = 400
+        return resp
 
 
 # add member to odoo
-@mod.route('/registerMember', methods=['POST'])
+@mod.route('/member', methods=['POST'])
 @token_auth.login_required
 def add_member():
     try:
-        args = {
-            'name': request.json['name'],
-            'address': request.json['address'],
-            'phone_no': request.json['phone_no'],
-            'mobile_no': request.json['mobile_no'],
-            'email': request.json['email'],
-            'registration_date': datetime.datetime.now().strftime("%Y-%m-%d"),
-            'state': 'draft',
-            'date_of_birth': request.json['dob'],
-            'home_address': request.json['home_address'],
-            'location': request.json['location'],
-
-        }
         with Logic() as r:
-            return str(r.register_member(args))
+            return str(r.register_member(request.json))
     except Exception as e:
         return str(e)
 

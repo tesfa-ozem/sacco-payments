@@ -20,11 +20,11 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(32), index=True)
     password_hash = db.Column(db.String(128))
+    email = db.Column(db.String(100))
     odoo_app_id = db.Column(db.String(10))
     odoo_member_id = db.Column(db.String(10))
     odoo_member_number = db.Column(db.String(20))
     odoo_registered = db.Column(db.Boolean)
-    odoo_member = db.Column(db.Boolean)
 
     def hash_password(self, password):
         self.password_hash = pwd_context.encrypt(password)

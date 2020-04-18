@@ -36,32 +36,34 @@ class Logic:
             if user_logged.odoo_registered is not True:
                 member_id = self.models_class.execute_kw(
                     DB, self.uid, PASS, 'sacco.member.application', 'create', [args])
-                self.models_class.exec_workflow(
-                    DB, self.uid, PASS, 'sacco.member.application', 'send_for_payment', member_id)
-                member_number = \
-                    self.models_class.execute_kw(DB, self.uid, PASS, 'sacco.member.application', 'search_read',
-                                                 [[['id', '=', member_id]]],
-                                                 {'fields': ['no']})[0]['no']
-                print member_number
 
-                user_logged.odoo_registered = True
-                user_logged.odoo_app_id = str(member_id)
-                db.session.add(user_logged)
-                db.session.commit()
                 return str(member_id)
             else:
-                return "member registered"
+                member = self.search_member()
+                self.models_class.execute_kw(DB, self.uid, PASS, 'sacco.member.application', 'write', [[id], args])
+                self.models_class.exec_workflow(
+                    DB, self.uid, PASS, 'sacco.member.application', 'send_for_payment', member.id)
+
+                user_logged.odoo_registered = True
+
+                return self.search_member()
         except Exception as e:
             return str(e)
 
     def search_member(self):
-        models = xmlrpclib.ServerProxy(ROOT + 'object')
+        user = g.user
+        if user.odoo_registered:
+            models = xmlrpclib.ServerProxy(ROOT + 'object')
 
-        member = models.execute_kw(DB, self.uid, PASS, 'sacco.member.application', 'search_read',
-                                   [[['id', '=', 40]]],
-                                   {'fields': ['id', 'name', 'no', 'state']})[0]
+            member = models.execute_kw(DB, self.uid, PASS, 'sacco.member', 'search_read',
+                                       [[['id', '=', user.odoo_member_id]]])[0]
+            return member
+        else:
+            models = xmlrpclib.ServerProxy(ROOT + 'object')
 
-        return member
+            member = models.execute_kw(DB, self.uid, PASS, 'sacco.member.application', 'search_read',
+                                       [[['id', '=', user.odoo_member_id]]])[0]
+            return member
 
     # TODO: add  script for multiple guarantors
     def apply_loan(self, args):
@@ -149,9 +151,8 @@ class Logic:
 
     # Deposits
 
-    def deposit(self, args, lines, user,odoo_member_id):
+    def deposit(self, args, lines, user, odoo_member_id):
         logged_user = user
-
         recipt_id = self.models_class.execute_kw(
             DB, self.uid, PASS, 'sacco.receipt.header', 'create', [args])
         if args['transaction_type'] == "normal":
@@ -166,7 +167,6 @@ class Logic:
                 self.models_class.execute_kw(DB, self.uid, PASS, 'sacco.receipt.line', 'create', [line])
         else:
             for l in lines:
-
                 line = {
                     'no': recipt_id,
                     'transaction_type': l['transaction_type'],
