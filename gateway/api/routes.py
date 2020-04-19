@@ -14,15 +14,25 @@ multi_auth = MultiAuth(basic_auth, auth)
 mod = Blueprint('api', __name__, url_prefix='/api')
 
 
-@mod.route('/signUp', methods=['POST'])
-def new_user():
+@mod.route('/member', methods=['POST'])
+def add_user():
     username = request.json.get('username')
     password = request.json.get('password')
+    email = request.json.get('email')
     if username is None or password is None:
         return jsonify({"error": "missing arguments"})  # missing arguments
     if User.query.filter_by(username=username).first() is not None:
         return jsonify({"error": "existing user"})  # existing user
-    user = User(username=username)
+    data = request.json
+
+    keys_to_remove = ["username", "password"]
+    for keys in keys_to_remove:
+        del data[keys]
+    with Logic() as r:
+        print data
+        member_app_id = r.register_member(data)
+
+    user = User(username=username, odoo_app_id=member_app_id, email=email)
     user.hash_password(password)
     db.session.add(user)
     db.session.commit()
@@ -30,14 +40,27 @@ def new_user():
         'Location': url_for('api.get_member', id=user.id, _external=True)}
 
 
-@mod.route('/member', methods=['PATCH'])
+@mod.route('/member', methods=['PUT'])
 @token_auth.login_required
 def update_member():
+    with Logic() as logic:
+        logic.update_member(request.json)
+    return "success"
+
+
+@mod.route('/member', methods=['Get'])
+@token_auth.login_required
+def get_member():
     try:
-        with Logic as logic:
-            return logic.register_member(request.json)
+        with Logic() as logic:
+            resp = jsonify({"data": logic.search_member()})
+            resp.status_code = 200
+            return resp
     except Exception as e:
-        return str(e)
+        resp = jsonify({'error ': "an error occurred",
+                        'message': str(e)})
+        resp.status_code = 400
+        return resp
 
 
 @mod.route('index', methods=['POST'])
@@ -78,32 +101,6 @@ def verify_token(token):
     return True
 
 
-@mod.route('/member', methods=['Get'])
-@token_auth.login_required
-def get_member():
-    try:
-        with Logic as logic:
-            resp = jsonify({"data": logic.search_member()})
-            resp.status_code = 200
-            return resp
-    except Exception as e:
-        resp = jsonify({'error ': "an error occurred",
-                        'message': str(e)})
-        resp.status_code = 400
-        return resp
-
-
-# add member to odoo
-@mod.route('/member', methods=['POST'])
-@token_auth.login_required
-def add_member():
-    try:
-        with Logic() as r:
-            return str(r.register_member(request.json))
-    except Exception as e:
-        return str(e)
-
-
 # Sacco payment process
 
 
@@ -121,10 +118,9 @@ def lipa_na_mpesa_online():
         lines = request.json['lines']
         trans_type = request.json['header']['transaction_type']
         phone_number = request.json['phone']
-        if status['state'] == 'complete' and user.odoo_member is not True:
-            user.odoo_member_number = status['member_id'][1]
+        if status['state'] == 'complete' and user.odoo_registered is not True:
             user.odoo_member_id = status['member_id'][0]
-            user.odoo_member = True
+            user.odoo_registered = True
             db.session.add(user)
             db.session.commit()
             odoo_member_id = status['member_id'][0]
@@ -177,7 +173,6 @@ def call_back():
             db.session.add(payment)
             db.session.commit()
             if trans_type == 'registration':
-                print user.odoo_app_id
                 args = {
                     'bank_code': bank_code,
                     'member_application_id': user.odoo_app_id,
@@ -193,7 +188,6 @@ def call_back():
                     'receipt_type': 'auto'
                 }
                 logic.deposit(args, lines, user, odoo_member_id)
-        print "callback"
 
         return "called"
     except Exception as e:
@@ -215,7 +209,7 @@ def loan_application():
         "member_no": user_logged.odoo_member_id,
         "loan_type": "online"
     }
-    with Logic as logic:
+    with Logic() as logic:
         return str(logic.apply_loan(args))
 
 

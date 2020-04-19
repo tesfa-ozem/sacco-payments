@@ -1,10 +1,10 @@
 import functools
 import xmlrpclib
 
-from flask import request, g
+from flask import request, g, jsonify
+import sys
 
-from gateway.models import User
-from gateway import db
+var = sys.version
 
 HOST = '127.0.0.1'
 PORT = 8069
@@ -27,43 +27,46 @@ class Logic:
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        print traceback
+        if exc_type is not None or exc_value is None or traceback is not None:
+            return exc_value
 
     def register_member(self, args):
         try:
-            user_logged = g.user
-            print user_logged.odoo_registered
-            if user_logged.odoo_registered is not True:
-                member_id = self.models_class.execute_kw(
-                    DB, self.uid, PASS, 'sacco.member.application', 'create', [args])
-
-                return str(member_id)
-            else:
-                member = self.search_member()
-                self.models_class.execute_kw(DB, self.uid, PASS, 'sacco.member.application', 'write', [[id], args])
-                self.models_class.exec_workflow(
-                    DB, self.uid, PASS, 'sacco.member.application', 'send_for_payment', member.id)
-
-                user_logged.odoo_registered = True
-
-                return self.search_member()
+            member_id = self.models_class.execute_kw(
+                DB, self.uid, PASS, 'sacco.member.application', 'create', [args])
+            self.models_class.exec_workflow(
+                DB, self.uid, PASS, 'sacco.member.application', 'send_for_payment', member_id)
+            return member_id
         except Exception as e:
             return str(e)
 
+    def update_member(self, args):
+        user_logged = g.user
+        if user_logged.odoo_registered is not True:
+            member = self.search_member()
+
+            self.models_class.execute_kw(DB, self.uid, PASS, 'sacco.member.application', 'write',
+                                         [[member['id']], args])
+            self.models_class.exec_workflow(
+                DB, self.uid, PASS, 'sacco.member.application', 'send_for_payment', member['id'])
+            return "Updated"
+
     def search_member(self):
-        user = g.user
-        if user.odoo_registered:
-            models = xmlrpclib.ServerProxy(ROOT + 'object')
+        try:
+            user = g.user
 
-            member = models.execute_kw(DB, self.uid, PASS, 'sacco.member', 'search_read',
-                                       [[['id', '=', user.odoo_member_id]]])[0]
-            return member
-        else:
-            models = xmlrpclib.ServerProxy(ROOT + 'object')
+            if user.odoo_registered:
+                member = self.models_class.execute_kw(DB, self.uid, PASS, 'sacco.member', 'search_read',
+                                                      [[['id', '=', user.odoo_member_id]]])[0]
+                return member
+            else:
+                print "not here"
+                member = self.models_class.execute_kw(DB, self.uid, PASS, 'sacco.member.application', 'search_read',
+                                                      [[['id', '=', user.odoo_app_id]]])[0]
 
-            member = models.execute_kw(DB, self.uid, PASS, 'sacco.member.application', 'search_read',
-                                       [[['id', '=', user.odoo_member_id]]])[0]
-            return member
+                return member
+        except Exception as e:
+            return str(e)
 
     # TODO: add  script for multiple guarantors
     def apply_loan(self, args):
@@ -83,60 +86,10 @@ class Logic:
     def check_loan_limit(self, args):
         pass
 
-    # TODO: add control for the amount
-    # def pay_reg_fee(self, args, amounts):
-    #     reg_fee = self.get_reg_fee()
-    #     recipt_id = self.models_class.execute_kw(
-    #         DB, self.uid, PASS, 'sacco.receipt.header', 'create', [args])
-    #     if reg_fee['reg_fee'] == amounts['reg_fee']:
-    #         self.models_class.execute_kw(DB, self.uid, PASS, 'sacco.receipt.line', 'create', [{
-    #             'no': recipt_id,
-    #             'transaction_type': 'registration',
-    #             'member_application_id': args['member_application_id'],
-    #             'member_name': 'Tesfa',
-    #             'amount': amounts['reg_fee'],
-    #
-    #         }
-    #         ])
-    #
-    #     if amounts['min_share'] is not None:
-    #         self.models_class.execute_kw(DB, self.uid, PASS, 'sacco.receipt.line', 'create', [{
-    #             'no': recipt_id,
-    #             'transaction_type': 'shares',
-    #             'member_application_id': args['member_application_id'],
-    #             'member_name': 'Tesfa',
-    #             'amount': amounts['min_share']
-    #         }
-    #         ])
-    #     self.models_class.execute_kw(DB, self.uid, PASS,
-    #                                  'sacco.receipt.header', 'action_post', [recipt_id])
-    #
-    #     return self.get_reg_status()
-
     def get_bank_code(self):
         setup = self.models_class.execute_kw(
             DB, self.uid, PASS, 'sacco.setup', 'search_read', [[['id', '=', 1]]])[0]
         return setup['mpesa_account'][0]
-
-    # def get_reg_fee(self):
-    #     try:
-    #         setup = self.models_class.execute_kw(
-    #             DB, self.uid, PASS, 'sacco.setup', 'search_read', [[['id', '=', 1]]])[0]
-    #         rg_fee = setup['registration_fee']
-    #         min_share_cap = setup['minimum_shares']
-    #         return {'reg_fee': rg_fee,
-    #                 'min_share': min_share_cap}
-    #     except Exception as e:
-    #
-    #         return str(e)
-
-    # def get_total_reg_fee(self):
-    #     total_reg_fee = 0.0
-    #
-    #     for i in self.get_reg_fee().values():
-    #         total_reg_fee += i
-    #
-    #     return total_reg_fee
 
     def get_reg_status(self):
         user_logged = g.user
@@ -151,10 +104,11 @@ class Logic:
 
     # Deposits
 
-    def deposit(self, args, lines, user, odoo_member_id):
+    def deposit(self, args, lines, user, odoo_member_id=0):
         logged_user = user
         recipt_id = self.models_class.execute_kw(
             DB, self.uid, PASS, 'sacco.receipt.header', 'create', [args])
+        print recipt_id
         if args['transaction_type'] == "normal":
             for l in lines:
                 line = {
@@ -175,22 +129,6 @@ class Logic:
                     'amount': l['amount']
                 }
                 self.models_class.execute_kw(DB, self.uid, PASS, 'sacco.receipt.line', 'create', [line])
-        self.models_class.exec_workflow(
-            DB, self.uid, PASS, 'sacco.receipt.header', 'send_for_posting', recipt_id)
-
-    def buy_share(self, args, amount):
-
-        recipt_id = self.models_class.execute_kw(
-            DB, self.uid, PASS, 'sacco.receipt.header', 'create', [args])
-
-        self.models_class.execute_kw(DB, self.uid, PASS, 'sacco.receipt.line', 'create', [{
-            'no': recipt_id,
-            'transaction_type': 'shares',
-            'member_no': args['received_from'],
-            'member_name': 'Nezghi',
-            'amount': amount
-        }
-        ])
         self.models_class.exec_workflow(
             DB, self.uid, PASS, 'sacco.receipt.header', 'send_for_posting', recipt_id)
 

@@ -21,9 +21,8 @@ class User(db.Model):
     username = db.Column(db.String(32), index=True)
     password_hash = db.Column(db.String(128))
     email = db.Column(db.String(100))
-    odoo_app_id = db.Column(db.String(10))
-    odoo_member_id = db.Column(db.String(10))
-    odoo_member_number = db.Column(db.String(20))
+    odoo_app_id = db.Column(db.Integer)
+    odoo_member_id = db.Column(db.Integer)
     odoo_registered = db.Column(db.Boolean)
 
     def hash_password(self, password):

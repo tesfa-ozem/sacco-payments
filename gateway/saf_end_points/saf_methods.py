@@ -17,28 +17,31 @@ class SafMethods:
         print traceback
 
     def send_push(self, args, phone_number):
-        access_token = MpesaAccessToken.validated_mpesa_access_token
-        amount = 0
-        for line in args:
-            amount += line['amount']
-        request_body = {
-            "BusinessShortCode": LipanaMpesaPpassword.Business_short_code,
-            "Password": LipanaMpesaPpassword.decode_password,
-            "Timestamp": LipanaMpesaPpassword.lipa_time,
-            "TransactionType": "CustomerPayBillOnline",
-            "Amount": amount,
-            "PartyA": phone_number,  # replace with your phone number to get stk push
-            "PartyB": LipanaMpesaPpassword.Business_short_code,
-            # replace with your phone number to get stk push
-            "PhoneNumber": phone_number,
-            "CallBackURL": "https://db0eab5d.ngrok.io/api/v1/c2b/callback",
-            "AccountReference": "Test payments",
-            "TransactionDesc": "1234"
-        }
-        api_url = "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest"
-        headers = {"Authorization": "Bearer %s" % access_token}
-        response = requests.post(api_url, json=request_body, headers=headers)
-        return response
+        try:
+            access_token = MpesaAccessToken.validated_mpesa_access_token
+            amount = 0
+            for line in args:
+                amount += line['amount']
+            request_body = {
+                "BusinessShortCode": LipanaMpesaPpassword.Business_short_code,
+                "Password": LipanaMpesaPpassword.decode_password,
+                "Timestamp": LipanaMpesaPpassword.lipa_time,
+                "TransactionType": "CustomerPayBillOnline",
+                "Amount": amount,
+                "PartyA": phone_number,  # replace with your phone number to get stk push
+                "PartyB": LipanaMpesaPpassword.Business_short_code,
+                # replace with your phone number to get stk push
+                "PhoneNumber": phone_number,
+                "CallBackURL": "https://84960c94.ngrok.io/api/v1/c2b/callback",
+                "AccountReference": "Test payments",
+                "TransactionDesc": "1234"
+            }
+            api_url = "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest"
+            headers = {"Authorization": "Bearer %s" % access_token}
+            response = requests.post(api_url, json=request_body, headers=headers)
+            return response
+        except Exception as e:
+            return str(e)
 
     def send_money(self, args):
         pass
