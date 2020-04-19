@@ -64,7 +64,6 @@ def get_member():
 
 
 @mod.route('index', methods=['POST'])
-@token_auth.login_required
 def index():
     return "Hello world"
 
